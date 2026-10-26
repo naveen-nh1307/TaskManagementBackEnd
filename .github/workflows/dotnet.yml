@@ -1,13 +1,13 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-#first run
-name: .NET
+# Build, test, and publish a .NET application
+
+name: .NET CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -15,14 +15,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+
+    # 1. Checkout source code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. Install .NET SDK
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+
+    # 3. Restore NuGet dependencies
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore YourSolution.sln
+
+    # 4. Build the application
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build YourSolution.sln --configuration Release --no-restore
+
+    # 5. Run automated tests
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test YourSolution.sln --configuration Release --no-build --verbosity normal
+
+    # 6. Publish the Web API
+    - name: Publish
+      run: dotnet publish YourApiProject.csproj --configuration Release --no-build --no-restore --output ./publish
+
+    # 7. Upload published files as an artifact
+    - name: Upload publish artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: published-dotnet-app
+        path: ./publish/
+```
