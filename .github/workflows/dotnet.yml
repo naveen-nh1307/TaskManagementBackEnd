@@ -1,6 +1,4 @@
 
-# Build, test, and publish a .NET API project
-
 name: .NET CI Pipeline
 
 on:
@@ -29,21 +27,21 @@ jobs:
 
       # 3. Restore NuGet dependencies
       - name: Restore dependencies
-        run: dotnet restore TaskManagementSystem.sln
+        run: dotnet restore TaskManagementSystem.csproj
 
-      # 4. Build the solution
+      # 4. Build the project
       - name: Build
-        run: dotnet build TaskManagementSystem.sln --configuration Release --no-restore
+        run: dotnet build TaskManagementSystem.csproj --configuration Release --no-restore
 
-      # 5. Run automated tests
+      # 5. Run tests
       - name: Test
-        run: dotnet test TaskManagementSystem.sln --configuration Release --no-build --no-restore --verbosity normal
+        run: dotnet test TaskManagementSystem.csproj --configuration Release --no-build --no-restore --verbosity normal
 
-      # 6. Publish the API project
+      # 6. Publish the API
       - name: Publish API
         run: dotnet publish TaskManagementSystem.csproj --configuration Release --no-build --no-restore --output ./publish
 
-      # 7. Upload published files as a GitHub Actions artifact
+      # 7. Upload published files
       - name: Upload publish artifact
         uses: actions/upload-artifact@v4
         with:
