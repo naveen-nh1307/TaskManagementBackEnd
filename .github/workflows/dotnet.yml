@@ -1,51 +1,53 @@
-# Build, test, and publish a .NET application
+
+# Build, test, and publish a .NET API project
 
 name: .NET CI Pipeline
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
   pull_request:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout source code
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # 1. Checkout source code
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # 2. Install .NET 8 SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
 
-    # 2. Install .NET SDK
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
+      # 3. Restore NuGet dependencies
+      - name: Restore dependencies
+        run: dotnet restore TaskManagementSystem.sln
 
-    # 3. Restore NuGet dependencies
-    - name: Restore dependencies
-      run: dotnet restore TaskManagementSystem.sln
+      # 4. Build the solution
+      - name: Build
+        run: dotnet build TaskManagementSystem.sln --configuration Release --no-restore
 
-    # 4. Build the application
-    - name: Build
-      run: dotnet build TaskManagementSystem.sln --configuration Release --no-restore
+      # 5. Run automated tests
+      - name: Test
+        run: dotnet test TaskManagementSystem.sln --configuration Release --no-build --no-restore --verbosity normal
 
-    # 5. Run automated tests
-    - name: Test
-      run: dotnet test TaskManagementSystem.sln --configuration Release --no-build --verbosity normal
+      # 6. Publish the API project
+      - name: Publish API
+        run: dotnet publish TaskManagementSystem.csproj --configuration Release --no-build --no-restore --output ./publish
 
-    # 6. Publish the Web API
-    - name: Publish
-      run: dotnet publish TaskManagementSystem.csproj --configuration Release --no-build --no-restore --output ./publish
-
-    # 7. Upload published files as an artifact
-    - name: Upload publish artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: published-dotnet-app
-        path: ./publish/
-
+      # 7. Upload published files as a GitHub Actions artifact
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-dotnet-api
+          path: ./publish/
+          if-no-files-found: error
+          retention-days: 7
