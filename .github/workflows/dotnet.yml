@@ -1,5 +1,43 @@
 
+# ============================================================
+# WORKFLOW NAME
+# ============================================================
+# 'name' defines the display name of this workflow in GitHub.
+# You can see this name under the repository's Actions tab.
+#
+# YAML SYNTAX:
+# key: value
+#
+# Example:
+# name: My CI/CD Pipeline
+
 name: .NET CI Pipeline
+
+
+# ============================================================
+# WORKFLOW TRIGGERS
+# ============================================================
+# 'on' defines WHEN the workflow should execute.
+#
+# 'push':
+# Runs the workflow whenever code is pushed to the specified
+# branch.
+#
+# 'pull_request':
+# Runs the workflow when a pull request targets the specified
+# branch. This helps validate changes before merging them.
+#
+# 'branches':
+# Specifies which branches should trigger the workflow.
+#
+# YAML SYNTAX:
+# on:
+#   push:
+#     branches:
+#       - main
+#
+# IMPORTANT:
+# Use consistent indentation. YAML uses spaces, not tabs.
 
 on:
   push:
@@ -10,38 +48,265 @@ on:
     branches:
       - main
 
+
+# ============================================================
+# JOBS
+# ============================================================
+# 'jobs' contains one or more jobs that GitHub Actions executes.
+#
+# 'build' is the job identifier. You can choose another name.
+#
+# 'runs-on' specifies the operating system of the runner.
+#
+# ubuntu-latest:
+# Uses a GitHub-hosted Ubuntu Linux virtual machine.
+# Suitable for most ASP.NET Core applications.
+#
+# Other common runners:
+# windows-latest
+# macos-latest
+#
+# YAML SYNTAX:
+# jobs:
+#   job_id:
+#     runs-on: runner_name
+#     steps:
+#
+# A job contains one or more steps.
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    # ========================================================
+    # STEPS
+    # ========================================================
+    # 'steps' defines the individual operations executed
+    # sequentially within this job.
+    #
+    # Each step generally uses either:
+    #   - uses: To execute an existing GitHub Action.
+    #   - run:  To execute shell commands.
+    #
+    # 'name' gives the step a readable name in the logs.
+
     steps:
-      # 1. Checkout source code
+
+      # ======================================================
+      # STEP 1: CHECKOUT SOURCE CODE
+      # ======================================================
+      # 'actions/checkout@v4' downloads the repository's
+      # source code into the runner's working directory.
+      #
+      # WHY IMPORTANT?
+      # The runner needs access to your .csproj file and source
+      # code before it can restore, build, test, or publish.
+      #
+      # SYNTAX:
+      # - uses: owner/action-name@version
+      #
+      # Example:
+      # - uses: actions/checkout@v4
+
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Install .NET 8 SDK
+
+      # ======================================================
+      # STEP 2: INSTALL .NET SDK
+      # ======================================================
+      # 'actions/setup-dotnet@v4' installs and configures the
+      # specified .NET SDK on the GitHub Actions runner.
+      #
+      # 'with' supplies configuration parameters to the action.
+      #
+      # 'dotnet-version: 8.0.x' selects an available .NET 8 SDK
+      # release matching the specified version pattern.
+      #
+      # WHY IMPORTANT?
+      # The runner needs a compatible SDK to restore packages,
+      # compile your code, execute tests, and publish the API.
+      #
+      # IMPORTANT:
+      # The SDK version should be compatible with the target
+      # framework specified in your .csproj file.
+      #
+      # SYNTAX:
+      # - name: Step name
+      #   uses: action-name@version
+      #   with:
+      #     parameter: value
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      # 3. Restore NuGet dependencies
+
+      # ======================================================
+      # STEP 3: RESTORE NUGET DEPENDENCIES
+      # ======================================================
+      # 'dotnet restore' resolves and downloads the NuGet
+      # packages required by your .NET project.
+      #
+      # 'TaskManagementSystem.csproj' identifies your project.
+      #
+      # WHY IMPORTANT?
+      # Your application may depend on packages such as
+      # Entity Framework Core, SQL Server providers, JWT
+      # authentication libraries, and other NuGet packages.
+      #
+      # Restore makes the required dependencies available
+      # before compilation.
+      #
+      # SYNTAX:
+      # dotnet restore <project-file>
+      #
+      # Example:
+      # dotnet restore TaskManagementSystem.csproj
+
       - name: Restore dependencies
         run: dotnet restore TaskManagementSystem.csproj
 
-      # 4. Build the project
+
+      # ======================================================
+      # STEP 4: BUILD THE PROJECT
+      # ======================================================
+      # 'dotnet build' compiles your .NET project.
+      #
+      # '--configuration Release':
+      # Uses the Release build configuration, typically used
+      # for deployment.
+      #
+      # '--no-restore':
+      # Skips restoring dependencies again because the
+      # Restore step has already completed.
+      #
+      # WHY IMPORTANT?
+      # This step identifies compilation errors before the
+      # application is published.
+      #
+      # If compilation fails, the workflow fails and later
+      # steps are skipped by default.
+      #
+      # SYNTAX:
+      # dotnet build <project-file> --configuration Release
+      #
+      # Additional option:
+      # --no-restore
+
       - name: Build
         run: dotnet build TaskManagementSystem.csproj --configuration Release --no-restore
 
-      # 5. Run tests
+
+      # ======================================================
+      # STEP 5: RUN AUTOMATED TESTS
+      # ======================================================
+      # 'dotnet test' runs automated tests for the specified
+      # project.
+      #
+      # '--configuration Release':
+      # Selects the Release configuration.
+      #
+      # '--no-build':
+      # Avoids rebuilding the project before running tests.
+      #
+      # '--no-restore':
+      # Avoids restoring NuGet dependencies again.
+      #
+      # '--verbosity normal':
+      # Displays a normal level of diagnostic information.
+      #
+      # WHY IMPORTANT?
+      # Automated tests help detect regressions and verify
+      # application behavior before publishing.
+      #
+      # IMPORTANT:
+      # This command does not guarantee that actual tests ran.
+      # If this is only a Web API project and no test project
+      # is configured, you should create a separate test
+      # project and execute its tests explicitly.
+      #
+      # SYNTAX:
+      # dotnet test <project-file> --configuration Release
+
       - name: Test
         run: dotnet test TaskManagementSystem.csproj --configuration Release --no-build --no-restore --verbosity normal
 
-      # 6. Publish the API
+
+      # ======================================================
+      # STEP 6: PUBLISH THE API
+      # ======================================================
+      # 'dotnet publish' prepares your application for
+      # deployment by generating the required application
+      # files and dependencies.
+      #
+      # '--configuration Release':
+      # Publishes the Release configuration.
+      #
+      # '--no-build':
+      # Reuses the output generated by the previous Build step.
+      #
+      # '--no-restore':
+      # Skips restoring dependencies again.
+      #
+      # '--output ./publish':
+      # Places the published files in a directory named
+      # 'publish' under the current working directory.
+      #
+      # WHY IMPORTANT?
+      # The output contains the application files that can
+      # be transferred to a hosting environment.
+      #
+      # IMPORTANT:
+      # Publishing does NOT automatically deploy the API
+      # to IIS, AWS, Azure, or another server.
+      #
+      # SYNTAX:
+      # dotnet publish <project-file>
+      #   --configuration Release
+      #   --output <directory>
+
       - name: Publish API
         run: dotnet publish TaskManagementSystem.csproj --configuration Release --no-build --no-restore --output ./publish
 
-      # 7. Upload published files
+
+      # ======================================================
+      # STEP 7: UPLOAD THE PUBLISHED FILES
+      # ======================================================
+      # 'actions/upload-artifact@v4' uploads files generated
+      # during the workflow run as a downloadable artifact.
+      #
+      # 'name':
+      # Specifies the artifact name displayed in GitHub.
+      #
+      # 'path':
+      # Specifies which files or directories to upload.
+      #
+      # 'if-no-files-found: error':
+      # Fails the step if the specified directory contains
+      # no files to upload.
+      #
+      # 'retention-days: 7':
+      # Requests that GitHub retain the artifact for seven
+      # days, subject to repository and organization policies.
+      #
+      # WHY IMPORTANT?
+      # GitHub-hosted runners are temporary. Uploading the
+      # artifact makes the published output available for
+      # download after the job finishes.
+      #
+      # SYNTAX:
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: artifact-name
+      #     path: directory/
+      #
+      # IMPORTANT:
+      # This uploads the files to GitHub Actions artifact
+      # storage. It does not deploy them to a server.
+
       - name: Upload publish artifact
         uses: actions/upload-artifact@v4
         with:
